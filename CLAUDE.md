@@ -9,6 +9,7 @@ The purpose of this AI agent is to accelerate analytics engineering workflows, i
 The agent is intended to assist with:
 
 * Building dbt projects and analytics data models
+* Orchestrate different tasks of dbt pipelines with Apache Airflow (MWAA)
 * Writing SQL transformations (staging, intermediate, mart layers)
 * Designing dimensional models and star schemas for analytics
 * Creating and maintaining data quality tests
@@ -44,9 +45,9 @@ The agent should prioritize practical implementation over theoretical explanatio
 
 ## About Me
 
-I work across Data Engineering, Analytics Engineering, and Business Analysis with a strong focus on building practical, scalable analytics solutions.
+I work as a Requirements Engineer and Business Analyst. Now I am working across Data Engineering, Analytics Engineering, with a strong focus on building practical, scalable analytics solutions because I would like to shift my career path from Requirements Engineering and Business Analyst towards Data Engineering, Data Analysis, Data Science and Analytics Engineering.
 
-I build analytics data models and transformation pipelines across the complete lifecycle:
+I already build analytics data models and transformation pipelines in some private projects across the complete lifecycle:
 
 * Data source integration (ELT, data ingestion)
 * Staging and source-conformed models
@@ -85,6 +86,8 @@ The primary audience includes:
 * Technical decision makers
 * Product and business stakeholders using analytics
 * Data platform teams
+* Business Analysts
++ Requirements Engineers
 
 The audience prefers:
 
@@ -216,9 +219,12 @@ Research documents should include:
 * seeds/                  — Reference data and seed files
 * snapshots/              — Slowly changing dimension snapshots
 * analysis/               — Ad-hoc analysis queries
+* src/                    — Operational source code
+* skills/                 — Reusable automation and workflows (Info: intellectual property. Never track them and push them to GitHub)
+* prompts/                — Reusable prompts (Info: intellectual property. Never track them and push them to GitHub)
 * docs/                   — Documentation (beyond dbt docs)
 * infra/                  — Infrastructure as Code (Terraform)
-* scripts/                — Operational scripts
+* scripts/                — Operational scripts (Info: intellectual property. Never track them and push them to GitHub)
 * venv/                   — Python virtual environment
 
 ---
