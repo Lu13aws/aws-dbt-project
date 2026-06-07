@@ -10,6 +10,10 @@ The agent is intended to assist with:
 
 * Building dbt projects and analytics data models
 * Orchestrate different tasks of dbt pipelines with Apache Airflow (MWAA)
+* AWS Lambda
+* AWS SQS
+* AWS SNS
+* other AWS services if needed
 * Writing SQL transformations (staging, intermediate, mart layers)
 * Designing dimensional models and star schemas for analytics
 * Creating and maintaining data quality tests
