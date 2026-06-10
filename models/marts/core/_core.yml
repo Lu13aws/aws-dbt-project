@@ -1,0 +1,178 @@
+version: 2
+
+models:
+  - name: dim_dates
+    description: >
+      Date dimension covering 2016-01-01 to 2019-01-01, generated via dbt_utils.date_spine.
+      All fact tables join to this model on a DATE column.
+      Grain: one row per calendar day.
+    columns:
+      - name: date_day
+        description: Calendar date (primary key).
+        data_tests:
+          - unique
+          - not_null
+      - name: year_number
+        description: 4-digit year.
+        data_tests:
+          - not_null
+      - name: month_number
+        description: Month number (1–12).
+        data_tests:
+          - not_null
+      - name: is_weekend
+        description: True for Saturday (DOW=6) and Sunday (DOW=0).
+        data_tests:
+          - not_null
+
+  - name: dim_customers
+    description: >
+      Customer dimension. Grain: one row per unique customer (person).
+      customer_unique_id is the Olist person-level identifier.
+      Includes pre-aggregated order history stats for convenience.
+    columns:
+      - name: customer_key
+        description: Surrogate key generated from customer_unique_id.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_unique_id
+        description: Natural person-level customer key from the source system.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_state
+        description: Brazilian state abbreviation.
+        data_tests:
+          - not_null
+
+  - name: dim_products
+    description: >
+      Product dimension with physical attributes and translated category name.
+      Grain: one row per product_id.
+    columns:
+      - name: product_key
+        description: Surrogate key generated from product_id.
+        data_tests:
+          - unique
+          - not_null
+      - name: product_id
+        description: Natural product identifier from the source system.
+        data_tests:
+          - unique
+          - not_null
+      - name: product_category_name_english
+        description: English category label. Defaults to 'unknown' when translation is missing.
+        data_tests:
+          - not_null
+
+  - name: dim_sellers
+    description: Seller dimension. Grain: one row per seller_id.
+    columns:
+      - name: seller_key
+        description: Surrogate key generated from seller_id.
+        data_tests:
+          - unique
+          - not_null
+      - name: seller_id
+        description: Natural seller identifier from the source system.
+        data_tests:
+          - unique
+          - not_null
+
+  - name: fct_orders
+    description: >
+      Primary order fact table. Grain: one row per order.
+      Materialized as incremental (merge on order_id) — new orders are appended on each run.
+      Includes delivery metrics, payment totals, and latest review rating.
+    config:
+      tags: ['incremental']
+    columns:
+      - name: order_id
+        description: Unique order identifier (natural key from source).
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_key
+        description: Foreign key to dim_customers.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_key
+      - name: order_date_key
+        description: Order date as DATE, foreign key to dim_dates.date_day.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_dates')
+              field: date_day
+      - name: order_status
+        description: Lifecycle status of the order.
+        data_tests:
+          - not_null
+      - name: total_payment_amount_brl
+        description: Total amount paid by the customer in BRL.
+      - name: review_rating
+        description: Customer review score (1–5). NULL when no review was submitted.
+
+  - name: fct_order_items
+    description: >
+      Order line item fact table. Grain: one row per order_id + order_item_id.
+      Use for product-level, category-level, and seller-level revenue analysis.
+    columns:
+      - name: order_item_key
+        description: Surrogate key generated from order_id + order_item_id.
+        data_tests:
+          - unique
+          - not_null
+      - name: order_id
+        description: Foreign key to fct_orders.
+        data_tests:
+          - not_null
+      - name: product_key
+        description: Foreign key to dim_products.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_products')
+              field: product_key
+      - name: seller_key
+        description: Foreign key to dim_sellers.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_sellers')
+              field: seller_key
+      - name: order_date_key
+        description: Order date as DATE, foreign key to dim_dates.date_day.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('dim_dates')
+              field: date_day
+      - name: total_item_revenue_brl
+        description: Item price plus freight in BRL.
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 0
+              max_value: 10000
+
+exposures:
+  - name: olist_orders_dashboard
+    type: dashboard
+    maturity: medium
+    description: >
+      Orders performance and delivery analytics dashboard. Tracks revenue, delivery
+      timeliness, customer segments, and product category performance.
+    depends_on:
+      - ref('fct_orders')
+      - ref('fct_order_items')
+      - ref('dim_customers')
+      - ref('dim_products')
+      - ref('dim_sellers')
+      - ref('dim_dates')
+    owner:
+      name: Luciano
+      email: luciano.10@hotmail.de

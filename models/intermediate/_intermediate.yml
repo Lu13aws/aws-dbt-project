@@ -1,0 +1,91 @@
+version: 2
+
+models:
+  - name: int_product_category_translated
+    description: >
+      Products enriched with English category names from the translation seed.
+      Products with no matching seed entry get NULL for the English category.
+      Grain: one row per product_id.
+    columns:
+      - name: product_id
+        description: Unique product identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: product_category_name_pt
+        description: Portuguese category name as sourced from raw data.
+      - name: product_category_name_english
+        description: English translation of the category. NULL if not in the seed.
+
+  - name: int_orders_enriched
+    description: >
+      Orders joined with aggregated payment totals, customer identity, and the latest review.
+      Delivery metrics (delivery_days, delivery_status) are computed here.
+      Grain: one row per order_id.
+    columns:
+      - name: order_id
+        description: Unique order identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_unique_id
+        description: Person-level customer key resolved from customers.
+        data_tests:
+          - not_null
+      - name: delivery_status
+        description: Timeliness bucket computed by classify_delivery_status macro.
+        data_tests:
+          - accepted_values:
+              values: ['on_time', 'slightly_late', 'late', 'very_late', 'not_delivered']
+      - name: total_payment_amount_brl
+        description: Total amount paid across all payment records for this order.
+
+  - name: int_order_items_enriched
+    description: >
+      Order line items joined with product category (English) and seller location.
+      Computes total_item_revenue_brl = item_price_brl + freight_value_brl.
+      Grain: one row per order_id + order_item_id.
+    columns:
+      - name: order_id
+        description: Foreign key to orders.
+        data_tests:
+          - not_null
+      - name: order_item_id
+        description: Sequential item number within the order.
+        data_tests:
+          - not_null
+      - name: product_id
+        description: Foreign key to products.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_products')
+              field: product_id
+      - name: seller_id
+        description: Foreign key to sellers.
+        data_tests:
+          - not_null
+          - relationships:
+              to: ref('stg_sellers')
+              field: seller_id
+      - name: total_item_revenue_brl
+        description: Sum of item price and freight for this line item.
+        data_tests:
+          - not_null
+
+  - name: int_customer_orders
+    description: >
+      Per-customer order history aggregated from int_orders_enriched.
+      Grain: one row per customer_unique_id.
+    columns:
+      - name: customer_unique_id
+        description: Person-level customer identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: total_orders
+        description: Total number of orders placed by this customer.
+        data_tests:
+          - not_null
+      - name: total_revenue_brl
+        description: Lifetime spend in BRL across all orders.

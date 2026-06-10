@@ -1,0 +1,150 @@
+version: 2
+
+models:
+  - name: stg_orders
+    description: >
+      Staged orders with renamed columns and a computed is_delivered flag.
+      Grain: one row per order_id.
+    columns:
+      - name: order_id
+        description: Unique order identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        description: Per-order customer key. Not a person-level identifier.
+        data_tests:
+          - not_null
+      - name: order_status
+        description: Current lifecycle status of the order.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['created', 'approved', 'processing', 'invoiced', 'shipped',
+                       'delivered', 'canceled', 'unavailable']
+      - name: ordered_at
+        description: Timestamp when the customer placed the order.
+        data_tests:
+          - not_null
+      - name: is_delivered
+        description: True when order_status is 'delivered'.
+        data_tests:
+          - not_null
+
+  - name: stg_order_items
+    description: >
+      Staged order line items. Grain: one row per order_id + order_item_id.
+      A single order can contain multiple items from different sellers.
+    columns:
+      - name: order_id
+        description: Foreign key to stg_orders.
+        data_tests:
+          - not_null
+      - name: order_item_id
+        description: Sequential item position within the order (1-based).
+        data_tests:
+          - not_null
+      - name: product_id
+        description: Foreign key to stg_products.
+        data_tests:
+          - not_null
+      - name: seller_id
+        description: Foreign key to stg_sellers.
+        data_tests:
+          - not_null
+      - name: item_price_brl
+        description: Unit price of the item in Brazilian Real (BRL).
+        data_tests:
+          - not_null
+      - name: freight_value_brl
+        description: Freight cost allocated to this item in BRL.
+        data_tests:
+          - not_null
+
+  - name: stg_order_payments
+    description: >
+      Staged payment records. Grain: one row per order_id + payment_sequential.
+      Multiple rows per order exist when installments or mixed payment methods are used.
+    columns:
+      - name: order_id
+        description: Foreign key to stg_orders.
+        data_tests:
+          - not_null
+      - name: payment_sequential
+        description: Payment sequence number within the order (1-based).
+        data_tests:
+          - not_null
+      - name: payment_type
+        description: Payment method used.
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['credit_card', 'boleto', 'voucher', 'debit_card', 'not_defined']
+      - name: payment_amount_brl
+        description: Amount paid in this payment record in BRL.
+        data_tests:
+          - not_null
+
+  - name: stg_order_reviews
+    description: >
+      Staged customer reviews. Grain: approximately one review per order.
+      A small number of orders have duplicate review records.
+    columns:
+      - name: review_id
+        description: Unique review identifier.
+        data_tests:
+          - not_null
+      - name: order_id
+        description: Foreign key to stg_orders.
+        data_tests:
+          - not_null
+      - name: review_rating
+        description: Customer satisfaction score from 1 (worst) to 5 (best).
+        data_tests:
+          - not_null
+          - dbt_expectations.expect_column_values_to_be_between:
+              min_value: 1
+              max_value: 5
+
+  - name: stg_customers
+    description: >
+      Staged customer records. Grain: one row per customer_id (per-order key).
+      Use customer_unique_id for person-level analytics.
+    columns:
+      - name: customer_id
+        description: Per-order customer identifier (unique per row).
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_unique_id
+        description: Person-level customer identifier. Multiple orders share this key.
+        data_tests:
+          - not_null
+      - name: customer_state
+        description: Brazilian state abbreviation (2 characters).
+        data_tests:
+          - not_null
+
+  - name: stg_products
+    description: Product catalog with physical dimensions. Grain: one row per product_id.
+    columns:
+      - name: product_id
+        description: Unique product identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: product_category_name_pt
+        description: Product category in Portuguese. May be NULL for some products.
+
+  - name: stg_sellers
+    description: Seller (merchant) records. Grain: one row per seller_id.
+    columns:
+      - name: seller_id
+        description: Unique seller identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: seller_state
+        description: Brazilian state abbreviation where the seller is registered.
+        data_tests:
+          - not_null

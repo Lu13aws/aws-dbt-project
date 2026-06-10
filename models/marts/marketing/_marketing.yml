@@ -1,0 +1,31 @@
+version: 2
+
+models:
+  - name: mrt_customer_lifetime_value
+    description: >
+      Denormalized customer LTV mart for BI and marketing use.
+      Grain: one row per unique customer. Includes BRL and USD revenue,
+      CLV segment (HIGH/MID/LOW), and monthly revenue rate.
+      No foreign keys — fully flattened for self-service analytics.
+    columns:
+      - name: customer_unique_id
+        description: Person-level customer identifier.
+        data_tests:
+          - unique
+          - not_null
+      - name: total_revenue_brl
+        description: Lifetime customer spend in BRL.
+        data_tests:
+          - not_null
+      - name: clv_segment
+        description: "Customer value segment: HIGH (>=1000 BRL), MID (>=300 BRL), LOW (<300 BRL)."
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['HIGH', 'MID', 'LOW']
+      - name: total_revenue_usd
+        description: Lifetime customer spend converted to USD (approximate historical rate).
+      - name: is_repeat_customer
+        description: True if the customer placed more than one order.
+        data_tests:
+          - not_null

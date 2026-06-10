@@ -1,0 +1,31 @@
+# Copy this file to ~/.dbt/profiles.yml (do NOT commit profiles.yml to git)
+# Replace all <placeholders> with your actual Redshift Serverless values.
+#
+# Set your password as an environment variable in PowerShell:
+#   $env:DBT_REDSHIFT_PASSWORD = "your_password_here"
+
+olist_redshift:
+  target: dev
+  outputs:
+    dev:
+      type: redshift
+      host: <WORKGROUP_NAME>.<ACCOUNT_ID>.<REGION>.redshift-serverless.amazonaws.com
+      port: 5439
+      dbname: olist
+      schema: dbt_dev
+      user: olist_admin
+      password: "{{ env_var('DBT_REDSHIFT_PASSWORD') }}"
+      threads: 4
+      connect_timeout: 30
+      ra3_node: true
+    prod:
+      type: redshift
+      host: <WORKGROUP_NAME>.<ACCOUNT_ID>.<REGION>.redshift-serverless.amazonaws.com
+      port: 5439
+      dbname: olist
+      schema: dbt_prod
+      user: olist_admin
+      password: "{{ env_var('DBT_REDSHIFT_PASSWORD') }}"
+      threads: 8
+      connect_timeout: 30
+      ra3_node: true

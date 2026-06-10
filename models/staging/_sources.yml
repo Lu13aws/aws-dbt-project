@@ -1,0 +1,95 @@
+version: 2
+
+sources:
+  - name: raw
+    description: Raw Olist e-commerce data loaded from S3 via COPY into the raw schema.
+    schema: raw
+    freshness:
+      warn_after: {count: 7, period: day}
+      error_after: {count: 30, period: day}
+    loaded_at_field: null
+
+    tables:
+      - name: orders
+        description: One row per order. customer_id is a per-order key (not a person identity).
+        columns:
+          - name: order_id
+            description: Unique order identifier.
+          - name: customer_id
+            description: Per-order customer key. Join to customers.customer_id for demographics.
+          - name: order_status
+            description: "Current order status: created, approved, processing, shipped, delivered, canceled, unavailable."
+          - name: order_purchase_timestamp
+            description: Timestamp when the customer placed the order.
+
+      - name: order_items
+        description: One row per line item within an order. An order can have multiple items.
+        columns:
+          - name: order_id
+            description: Foreign key to orders.
+          - name: order_item_id
+            description: Sequential item number within the order (1-based).
+          - name: product_id
+            description: Foreign key to products.
+          - name: seller_id
+            description: Foreign key to sellers.
+          - name: price
+            description: Item unit price in BRL.
+          - name: freight_value
+            description: Freight cost for this item in BRL.
+
+      - name: order_payments
+        description: Payment records per order. Multiple rows per order when installments are used.
+        columns:
+          - name: order_id
+            description: Foreign key to orders.
+          - name: payment_sequential
+            description: Payment sequence number (1-based) when multiple payments exist for one order.
+          - name: payment_type
+            description: "Payment method: credit_card, boleto, voucher, debit_card."
+          - name: payment_installments
+            description: Number of installments chosen by the customer.
+          - name: payment_value
+            description: Payment amount for this row in BRL.
+
+      - name: order_reviews
+        description: Customer review per order. One review per order in most cases.
+        columns:
+          - name: review_id
+            description: Unique review identifier.
+          - name: order_id
+            description: Foreign key to orders.
+          - name: review_score
+            description: Rating from 1 (worst) to 5 (best).
+
+      - name: customers
+        description: >
+          Customer records. Note: customer_id is unique per order (one customer can have multiple
+          customer_id values). customer_unique_id is the true person-level identifier.
+        columns:
+          - name: customer_id
+            description: Per-order customer identifier (foreign key from orders).
+          - name: customer_unique_id
+            description: Person-level customer identifier. Use this for customer analytics.
+          - name: customer_city
+            description: City of the customer's registered address.
+          - name: customer_state
+            description: Brazilian state abbreviation (e.g., SP, RJ).
+
+      - name: products
+        description: Product catalog with physical dimensions and category.
+        columns:
+          - name: product_id
+            description: Unique product identifier.
+          - name: product_category_name
+            description: Product category in Portuguese. Join to seed for English translation.
+
+      - name: sellers
+        description: Seller (merchant) details including location.
+        columns:
+          - name: seller_id
+            description: Unique seller identifier.
+          - name: seller_city
+            description: City of the seller's registered address.
+          - name: seller_state
+            description: Brazilian state abbreviation.
