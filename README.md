@@ -5,6 +5,40 @@ The pipeline ingests raw transactional data from S3, transforms it through a thr
 
 ---
 
+## Quick Start
+
+For someone cloning this repo fresh — minimum steps to get everything running:
+
+```powershell
+# 1. Create and activate virtual environment
+python -m venv venv
+.\venv\Scripts\Activate.ps1
+
+# 2. Install dbt
+pip install dbt-redshift==1.10.1
+
+# 3. Create ~/.dbt/profiles.yml (see Environment Setup section for template)
+
+# 4. Set password in every new terminal session
+$env:DBT_REDSHIFT_PASSWORD = "your-password-here"
+
+# 5. Verify connection
+.\venv\Scripts\dbt debug --profiles-dir C:\Users\<user>\.dbt
+
+# 6. Install packages
+.\venv\Scripts\dbt deps
+
+# 7. Build everything
+.\venv\Scripts\dbt seed --profiles-dir C:\Users\<user>\.dbt
+.\venv\Scripts\dbt run --profiles-dir C:\Users\lucia\.dbt
+.\venv\Scripts\dbt test --profiles-dir C:\Users\lucia\.dbt
+.\venv\Scripts\dbt snapshot --profiles-dir C:\Users\lucia\.dbt
+```
+
+> **Note:** Raw data must be loaded into Redshift first — see [Service Setup](#service-setup) and `infra/sql/raw_tables/`.
+
+---
+
 ## Project Structure
 
 ```
@@ -256,6 +290,17 @@ dbt test --select staging.*
 # Models with a specific tag
 dbt run --select tag:incremental
 ```
+
+### Node Selection Behavior — Observed
+
+| Command | Models / Tests selected | Notes |
+|---|---|---|
+| `--select staging.*` | 35 tests across staging + related layers | Relationship tests from `int_*` models that reference staging models are pulled in automatically |
+| `--select +fct_orders` | 8 models: 4 staging + 2 intermediate + dim_customers + fct_orders | dbt resolves the full upstream DAG from `ref()` calls — no manual dependency list needed |
+| `--select tag:incremental` | 1 model: fct_orders only | Only models explicitly tagged in their config block are selected |
+| `--select int_product_category_translated+` | Downstream chain: dim_products → fct_order_items | `+` suffix walks all downstream dependents |
+
+**Incremental timing:** `fct_orders` ran in ~3.7s on the first `--full-refresh` build (full table write) and ~3.0s on subsequent incremental runs (MERGE with 0 new rows). At production scale with daily new orders, only the delta is processed — not all 100K rows.
 
 ---
 
