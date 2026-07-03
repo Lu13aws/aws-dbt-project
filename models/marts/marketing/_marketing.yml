@@ -22,7 +22,8 @@ models:
         data_tests:
           - not_null
           - accepted_values:
-              values: ['HIGH', 'MID', 'LOW']
+              arguments:
+                values: ['HIGH', 'MID', 'LOW']
       - name: total_revenue_usd
         description: Lifetime customer spend converted to USD (approximate historical rate).
       - name: is_repeat_customer

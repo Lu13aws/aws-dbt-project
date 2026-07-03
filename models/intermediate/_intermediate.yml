@@ -36,7 +36,8 @@ models:
         description: Timeliness bucket computed by classify_delivery_status macro.
         data_tests:
           - accepted_values:
-              values: ['on_time', 'slightly_late', 'late', 'very_late', 'not_delivered']
+              arguments:
+                values: ['on_time', 'slightly_late', 'late', 'very_late', 'not_delivered']
       - name: total_payment_amount_brl
         description: Total amount paid across all payment records for this order.
 
@@ -59,15 +60,17 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('stg_products')
-              field: product_id
+              arguments:
+                to: ref('stg_products')
+                field: product_id
       - name: seller_id
         description: Foreign key to sellers.
         data_tests:
           - not_null
           - relationships:
-              to: ref('stg_sellers')
-              field: seller_id
+              arguments:
+                to: ref('stg_sellers')
+                field: seller_id
       - name: total_item_revenue_brl
         description: Sum of item price and freight for this line item.
         data_tests:

@@ -1,11 +1,16 @@
 -- Enriches products with English category names from the seed translation table.
--- Products with no matching category in the seed get NULL for the English name.
+-- The Olist translation CSV has duplicate PT entries; deduplicate before joining.
 WITH products AS (
     SELECT * FROM {{ ref('stg_products') }}
 ),
 
 translations AS (
-    SELECT * FROM {{ ref('product_category_name_translation') }}
+    -- Deduplicate: if a PT name appears twice, keep one EN label (MAX is deterministic)
+    SELECT
+        product_category_name,
+        MAX(product_category_name_english) AS product_category_name_english
+    FROM {{ ref('product_category_name_translation') }}
+    GROUP BY product_category_name
 )
 
 SELECT

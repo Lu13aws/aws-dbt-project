@@ -5,25 +5,51 @@ WITH orders AS (
 ),
 
 -- Aggregate payments: one order can have multiple payment rows (installments / multiple methods)
-payments_agg AS (
+-- Redshift limitation: LISTAGG and COUNT(DISTINCT) cannot appear in the same query, so split into two CTEs.
+payments_metrics AS (
     SELECT
         order_id,
         SUM(payment_amount_brl)         AS total_payment_amount_brl,
         MAX(payment_installments)       AS max_payment_installments,
-        COUNT(DISTINCT payment_type)    AS payment_method_count,
-        LISTAGG(DISTINCT payment_type, ', ') WITHIN GROUP (ORDER BY payment_type)
-                                        AS payment_types_used
+        COUNT(DISTINCT payment_type)    AS payment_method_count
     FROM {{ ref('stg_order_payments') }}
     GROUP BY order_id
 ),
 
+payments_types AS (
+    SELECT
+        order_id,
+        LISTAGG(payment_type, ', ') WITHIN GROUP (ORDER BY payment_type)
+                                        AS payment_types_used
+    FROM (
+        SELECT DISTINCT order_id, payment_type
+        FROM {{ ref('stg_order_payments') }}
+    ) deduped
+    GROUP BY order_id
+),
+
+payments_agg AS (
+    SELECT
+        m.order_id,
+        m.total_payment_amount_brl,
+        m.max_payment_installments,
+        m.payment_method_count,
+        t.payment_types_used
+    FROM payments_metrics AS m
+    LEFT JOIN payments_types AS t ON m.order_id = t.order_id
+),
+
 -- Latest review per order (a small number of orders have duplicate reviews)
 reviews_latest AS (
-    SELECT DISTINCT ON (order_id)
-        order_id,
-        review_rating
-    FROM {{ ref('stg_order_reviews') }}
-    ORDER BY order_id, review_answered_at DESC
+    SELECT order_id, review_rating
+    FROM (
+        SELECT
+            order_id,
+            review_rating,
+            ROW_NUMBER() OVER (PARTITION BY order_id ORDER BY review_answered_at DESC) AS rn
+        FROM {{ ref('stg_order_reviews') }}
+    ) ranked
+    WHERE rn = 1
 ),
 
 customers AS (

@@ -20,8 +20,9 @@ models:
         data_tests:
           - not_null
           - accepted_values:
-              values: ['created', 'approved', 'processing', 'invoiced', 'shipped',
-                       'delivered', 'canceled', 'unavailable']
+              arguments:
+                values: ['created', 'approved', 'processing', 'invoiced', 'shipped',
+                         'delivered', 'canceled', 'unavailable']
       - name: ordered_at
         description: Timestamp when the customer placed the order.
         data_tests:
@@ -79,7 +80,8 @@ models:
         data_tests:
           - not_null
           - accepted_values:
-              values: ['credit_card', 'boleto', 'voucher', 'debit_card', 'not_defined']
+              arguments:
+                values: ['credit_card', 'boleto', 'voucher', 'debit_card', 'not_defined']
       - name: payment_amount_brl
         description: Amount paid in this payment record in BRL.
         data_tests:
@@ -103,8 +105,9 @@ models:
         data_tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 1
-              max_value: 5
+              arguments:
+                min_value: 1
+                max_value: 5
 
   - name: stg_customers
     description: >
@@ -126,7 +129,7 @@ models:
           - not_null
 
   - name: stg_products
-    description: Product catalog with physical dimensions. Grain: one row per product_id.
+    description: "Product catalog with physical dimensions. Grain: one row per product_id."
     columns:
       - name: product_id
         description: Unique product identifier.
@@ -137,7 +140,7 @@ models:
         description: Product category in Portuguese. May be NULL for some products.
 
   - name: stg_sellers
-    description: Seller (merchant) records. Grain: one row per seller_id.
+    description: "Seller (merchant) records. Grain: one row per seller_id."
     columns:
       - name: seller_id
         description: Unique seller identifier.

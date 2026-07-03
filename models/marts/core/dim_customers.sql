@@ -5,14 +5,18 @@ WITH customer_orders AS (
 ),
 
 customers AS (
-    -- One customer_unique_id can have multiple customer_id rows; use DISTINCT ON latest
-    SELECT DISTINCT ON (customer_unique_id)
-        customer_unique_id,
-        customer_city,
-        customer_state,
-        zip_code_prefix
-    FROM {{ ref('stg_customers') }}
-    ORDER BY customer_unique_id
+    -- One customer_unique_id can have multiple customer_id rows; keep one per person
+    SELECT customer_unique_id, customer_city, customer_state, zip_code_prefix
+    FROM (
+        SELECT
+            customer_unique_id,
+            customer_city,
+            customer_state,
+            zip_code_prefix,
+            ROW_NUMBER() OVER (PARTITION BY customer_unique_id ORDER BY customer_id) AS rn
+        FROM {{ ref('stg_customers') }}
+    ) ranked
+    WHERE rn = 1
 )
 
 SELECT
@@ -22,15 +26,15 @@ SELECT
     c.customer_city,
     c.customer_state,
     c.zip_code_prefix,
-    co.total_orders,
+    COALESCE(co.total_orders, 0)            AS total_orders,
     co.first_order_at,
     co.last_order_at,
-    co.customer_lifespan_days,
-    co.total_revenue_brl,
-    co.avg_order_value_brl,
+    COALESCE(co.customer_lifespan_days, 0)  AS customer_lifespan_days,
+    COALESCE(co.total_revenue_brl, 0)       AS total_revenue_brl,
+    COALESCE(co.avg_order_value_brl, 0)     AS avg_order_value_brl,
     co.avg_review_rating,
-    co.delivered_orders,
-    co.is_repeat_customer
+    COALESCE(co.delivered_orders, 0)        AS delivered_orders,
+    COALESCE(co.is_repeat_customer, FALSE)  AS is_repeat_customer
 FROM customers AS c
 LEFT JOIN customer_orders AS co
     ON c.customer_unique_id = co.customer_unique_id

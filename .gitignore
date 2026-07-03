@@ -6,3 +6,4 @@ venv/
 profiles.yml
 *.pyc
 __pycache__/
+dbt_internal_packages/

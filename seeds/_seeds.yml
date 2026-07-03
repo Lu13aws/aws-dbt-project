@@ -9,7 +9,6 @@ seeds:
       - name: product_category_name
         description: Portuguese product category name as used in raw.products.
         data_tests:
-          - unique
           - not_null
       - name: product_category_name_english
         description: English translation of the product category.

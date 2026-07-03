@@ -1,0 +1,14 @@
+packages:
+- package: dbt-labs/audit_helper
+  name: audit_helper
+  version: 0.14.0
+- package: calogica/dbt_date
+  name: dbt_date
+  version: 0.10.1
+- package: calogica/dbt_expectations
+  name: dbt_expectations
+  version: 0.10.4
+- package: dbt-labs/dbt_utils
+  name: dbt_utils
+  version: 1.4.1
+sha1_hash: ab4e85cce563139de5736accd4ca7197880bb8de

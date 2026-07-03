@@ -34,7 +34,7 @@ Typical recurring tasks include:
 * Writing SQL transformations for analytics
 * Designing fact and dimension tables
 * Creating dbt tests (uniqueness, not_null, relationships, custom)
-* Generating documentation (dbt docs)
+* Generating documentation (dbt compile --write-catalog + local serving via Python http.server)
 * Building macros for reusable SQL patterns
 * Configuring incremental models
 * Optimizing query performance
@@ -44,6 +44,25 @@ Typical recurring tasks include:
 * Documenting data lineage and exposures
 
 The agent should prioritize practical implementation over theoretical explanations.
+
+---
+
+## dbt Version & Known Breaking Changes
+
+Active version: **dbt-core 2.0.0-alpha.1** with **dbt-redshift 1.10.1** (installed in `venv/`).
+
+Key dbt 2.0 breaking changes to be aware of:
+
+* All generic test arguments (`to`, `field`, `values`, `min_value`, `max_value`) must be nested under an `arguments:` key in schema YAML
+* `freshness` and `loaded_at_field` are no longer supported at the source level in `_sources.yml`
+* `dbt docs generate` and `dbt docs serve` are removed — use `dbt compile --write-catalog` to generate `catalog.json`, then serve with Python: `python -m http.server 8080` from the `target/` directory (requires `index.html` from github.com/dbt-labs/dbt-core/v1.9.0)
+
+Redshift-specific SQL constraints:
+
+* `raw` is a reserved word — always quote as `"raw"` in SQL; set `quoting: { schema: true }` in `_sources.yml`
+* `DISTINCT ON (col)` is not supported — use `ROW_NUMBER() OVER (PARTITION BY ...)` instead
+* `LISTAGG(DISTINCT ...)` and `COUNT(DISTINCT ...)` cannot appear in the same query — split into separate CTEs
+* Changing a view's column type requires `DROP VIEW IF EXISTS ... CASCADE` before dbt can recreate it
 
 ---
 
@@ -227,7 +246,7 @@ Research documents should include:
 * skills/                 — Reusable automation and workflows (Info: intellectual property. Never track them and push them to GitHub)
 * prompts/                — Reusable prompts (Info: intellectual property. Never track them and push them to GitHub)
 * docs/                   — Documentation (beyond dbt docs)
-* infra/                  — Infrastructure as Code (Terraform)
+* infra/                  — Infrastructure scripts (SQL DDL + COPY scripts for Redshift; Terraform if needed)
 * scripts/                — Operational scripts (Info: intellectual property. Never track them and push them to GitHub)
 * venv/                   — Python virtual environment
 

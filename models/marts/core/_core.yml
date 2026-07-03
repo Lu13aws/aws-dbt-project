@@ -67,7 +67,7 @@ models:
           - not_null
 
   - name: dim_sellers
-    description: Seller dimension. Grain: one row per seller_id.
+    description: "Seller dimension. Grain: one row per seller_id."
     columns:
       - name: seller_key
         description: Surrogate key generated from seller_id.
@@ -98,15 +98,17 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('dim_customers')
-              field: customer_key
+              arguments:
+                to: ref('dim_customers')
+                field: customer_key
       - name: order_date_key
         description: Order date as DATE, foreign key to dim_dates.date_day.
         data_tests:
           - not_null
           - relationships:
-              to: ref('dim_dates')
-              field: date_day
+              arguments:
+                to: ref('dim_dates')
+                field: date_day
       - name: order_status
         description: Lifecycle status of the order.
         data_tests:
@@ -135,29 +137,33 @@ models:
         data_tests:
           - not_null
           - relationships:
-              to: ref('dim_products')
-              field: product_key
+              arguments:
+                to: ref('dim_products')
+                field: product_key
       - name: seller_key
         description: Foreign key to dim_sellers.
         data_tests:
           - not_null
           - relationships:
-              to: ref('dim_sellers')
-              field: seller_key
+              arguments:
+                to: ref('dim_sellers')
+                field: seller_key
       - name: order_date_key
         description: Order date as DATE, foreign key to dim_dates.date_day.
         data_tests:
           - not_null
           - relationships:
-              to: ref('dim_dates')
-              field: date_day
+              arguments:
+                to: ref('dim_dates')
+                field: date_day
       - name: total_item_revenue_brl
         description: Item price plus freight in BRL.
         data_tests:
           - not_null
           - dbt_expectations.expect_column_values_to_be_between:
-              min_value: 0
-              max_value: 10000
+              arguments:
+                min_value: 0
+                max_value: 10000
 
 exposures:
   - name: olist_orders_dashboard

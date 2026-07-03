@@ -9,9 +9,9 @@ olist_redshift:
   outputs:
     dev:
       type: redshift
-      host: <WORKGROUP_NAME>.<ACCOUNT_ID>.<REGION>.redshift-serverless.amazonaws.com
+      host: olist-workgroup.759302162548.eu-central-1.redshift-serverless.amazonaws.com
       port: 5439
-      dbname: olist
+      dbname: dev
       schema: dbt_dev
       user: olist_admin
       password: "{{ env_var('DBT_REDSHIFT_PASSWORD') }}"
