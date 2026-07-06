@@ -562,6 +562,24 @@ File saved at: `analysis/olist_analytics_dashboard.pbix`
 - Bar Chart: Revenue by seller state — SP accounts for ~60% of all revenue
 - Scatter: Orders vs revenue by category — reveals high-volume vs high-value category clusters
 
+### Known Issues & Fixes
+
+**year_month X-axis sorts alphabetically instead of chronologically**
+
+`year_month` is a text column (e.g. "2016-07") — Power BI sorts it as text by default.
+
+Fix: Create a calculated column in Power BI Data view on `dim_dates`:
+```dax
+year_month_sort = dim_dates[year_number] * 100 + dim_dates[month_number]
+```
+Then: select `year_month` column → **Sort by Column → `year_month_sort`**. Re-add `year_month` to the line chart X-axis.
+
+**Revenue drops to near zero in Sep/Oct 2018**
+
+This is not a real business decline — it is a data cutoff artifact. The Olist dataset ends in October 2018 and incomplete/in-transit orders have not yet been settled. Ignore the last 1–2 data points on time-series charts.
+
+---
+
 ### Key DAX Measure
 
 ```dax
