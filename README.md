@@ -135,7 +135,7 @@ Olist CSV files (Kaggle)
 → dbt marts/core (6 tables: dim_customers, dim_products, dim_sellers, dim_dates, fct_orders, fct_order_items)
 → dbt marts/marketing (1 table: mrt_customer_lifetime_value)
 → dbt snapshot (sellers_snapshot — SCD Type 2)
-→ BI / Dashboard (olist_orders_dashboard exposure)
+→ Power BI Desktop (4-page analytics dashboard via Import mode)
 ```
 
 ---
@@ -502,12 +502,94 @@ cd target; python -m http.server 8080
 - Add Slack alerts on test failures via Airflow callbacks
 
 ### BI Layer
-- Connect Amazon QuickSight to the mart schemas for dashboard prototypes
-- Build the `olist_orders_dashboard` exposure referenced in `_core.yml`
+- Add slicers/filters to Power BI dashboard (date range, state, category)
+- Connect Amazon QuickSight as alternative BI layer for AWS-native teams
+- Publish Power BI report to Power BI Service for web sharing
+
+---
+
+## Power BI Dashboard
+
+A 4-page analytics dashboard built in Power BI Desktop, connected to Redshift Serverless via Import mode.
+File saved at: `analysis/olist_analytics_dashboard.pbix`
+
+### Connection Setup
+
+1. **Get data → Amazon Redshift**
+   - Server: `olist-workgroup.759302162548.eu-central-1.redshift-serverless.amazonaws.com`
+   - Database: `dev`
+   - Mode: **Import**
+   - Credentials: Database → `olist_admin` / password
+
+2. **Tables to load** (7 total):
+   - `dbt_dev_marts`: dim_customers, dim_dates, dim_products, dim_sellers, fct_order_items, fct_orders
+   - `dbt_dev_marketing`: mrt_customer_lifetime_value
+
+3. **Relationships** (set manually in Model view):
+
+| From | To | Column | Status |
+|---|---|---|---|
+| fct_order_items | fct_orders | order_id | Active |
+| fct_order_items | dim_products | product_key | Active |
+| fct_order_items | dim_sellers | seller_key | Active |
+| fct_orders | dim_customers | customer_key | Active |
+| fct_orders | dim_dates | order_date_key = date_day | Active |
+| mrt_customer_lifetime_value | dim_customers | customer_unique_id | Active |
+| fct_order_items | dim_dates | order_date_key = date_day | Inactive (ambiguous path — normal) |
+
+> **Note:** Redshift Serverless auto-suspends after inactivity. If Power BI times out, run `dbt debug` first to wake the cluster, then retry.
+
+### Dashboard Pages
+
+**Page 1 — Order Performance**
+- KPI Cards: Total Revenue (16M BRL) · Avg Review Rating (4.09) · Total Orders (99,441)
+- Line Chart: Monthly revenue trend (2016–2018)
+- Donut: Orders by status — 97% delivered
+
+**Page 2 — Delivery Performance**
+- Bar Chart: Delivery status distribution — majority on_time
+- Bar Chart: Avg delivery days by state — RR (Roraima) longest at 29 days due to geographic isolation
+- Bar Chart: Review rating distribution — rating 5 most frequent
+
+**Page 3 — Customer Analytics**
+- Donut: CLV segments — 89% LOW / 10% MID / 1% HIGH
+- Bar Chart: Revenue by CLV segment
+- Bar Chart: Top 10 states by order count — SP dominates with ~40K orders
+- Card: Repeat Customer Rate = 3% (97% of customers bought only once)
+
+**Page 4 — Products & Sellers**
+- Bar Chart: Top 10 categories by revenue — health_beauty #1, watches_gifts #2, bed_bath_table #3
+- Bar Chart: Revenue by seller state — SP accounts for ~60% of all revenue
+- Scatter: Orders vs revenue by category — reveals high-volume vs high-value category clusters
+
+### Key DAX Measure
+
+```dax
+Repeat Customer Rate =
+DIVIDE(
+    COUNTROWS(FILTER(mrt_customer_lifetime_value, mrt_customer_lifetime_value[is_repeat_customer] = TRUE())),
+    COUNTROWS(mrt_customer_lifetime_value)
+)
+```
 
 ---
 
 ## Project Progress
+
+### 20260706
+
+Power BI Dashboard
+
+**Observation**
+Redshift Serverless auto-suspended after inactivity — Power BI connection timed out on first attempt.
+
+**Solution**
+Ran `dbt debug` to wake the cluster, then retried the Power BI connection successfully.
+
+**Result**
+Connected Power BI Desktop to Redshift Serverless (Import mode). Loaded 7 mart tables, configured 6 active relationships (1 inactive — normal Power BI behavior for ambiguous paths). Built 4-page dashboard covering Order Performance, Delivery Performance, Customer Analytics, and Products & Sellers. Saved as `analysis/olist_analytics_dashboard.pbix`.
+
+---
 
 ### 20260703
 

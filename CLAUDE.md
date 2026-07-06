@@ -86,7 +86,7 @@ My projects often combine:
 * dbt (Data Build Tool)
 * AWS data warehouses (Redshift, Athena + S3)
 * ELT tools (Fivetran, Stitch, AWS Glue)
-* BI platforms (Looker, Tableau, QuickSight)
+* BI platforms (Looker, Tableau, QuickSight, Power BI Desktop)
 * Data orchestration (Airflow, dbt Cloud, Step Functions)
 * Modern data stack tools
 * SQL and Python

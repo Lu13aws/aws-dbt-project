@@ -7,3 +7,8 @@ profiles.yml
 *.pyc
 __pycache__/
 dbt_internal_packages/
+
+# BI tool files (large binaries — store externally or share via BI service)
+*.pbix
+*.twbx
+*.twb
